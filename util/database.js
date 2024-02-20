@@ -1,23 +1,27 @@
-// Using My-SQL
-// const mysql = require('mysql2');
+const mongodb = require('mongodb');
 
-// const pool = mysql.createPool({
-//     host: 'localhost',
-//     user: 'root',
-//     database: 'node-complete',
-//     password: 'gonecase'
-// })
+const MongoClient = mongodb.MongoClient;
 
-// module.exports = pool.promise();
+let _db;
 
+const mongoConnect = (callback) => {
+    MongoClient.connect('mongodb+srv://bgoutham955:gonecase@cluster0.pjvcj4k.mongodb.net/shop')
+    .then((client) => {
+        console.log('Connected to database!');
+        _db = client.db();
+        callback();
+    }).catch((err) => {
+            console.log(err);
+            throw err;
+    });
+}
 
-// Using Sequelize
+const getDb = () => {
+    if(_db) {
+        return _db;
+    }
+    throw 'Database is not connected';
+}
 
-const Sequelize = require('sequelize');
-
-const sequelize = new Sequelize('node-complete', 'root', 'gonecase', {
-    dialect: 'mysql',
-    host: 'localhost'
-});
-
-module.exports = sequelize;
+exports.mongoConnect = mongoConnect;
+exports.getDb = getDb;
