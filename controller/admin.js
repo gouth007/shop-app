@@ -12,7 +12,7 @@ exports.postAddProduct = (req, res, next) => {
     const price = req.body.price;
     const imageURL = req.body.imageURL;
     const discription = req.body.discription;
-    const product = new Product(title, price, imageURL, discription, null, req.user._id);
+    const product = new Product({title: title, price: price, imageURL: imageURL, discription: discription, userId: req.user});
     product.save().then((result) => {
         console.log('Created product');
         res.redirect('/admin/products');
@@ -27,7 +27,7 @@ exports.getEditProduct = (req, res, next) => {
         return res.redirect('/');
     }
     const productId = req.params.productId;
-    Product.fetchById(productId).then((product) => {
+    Product.findById(productId).then((product) => {
         if(!product) {
             return res.redirect('/');
         }
@@ -49,8 +49,14 @@ exports.postEditProduct = (req, res, next) => {
     const updatedImageURL = req.body.imageURL;
     const updatedDescription = req.body.discription;
     
-    const product = new Product(updatedTitle, updatedPrice, updatedImageURL, updatedDescription, productId);
-    product.save().then((result) => {
+    Product.findById(productId)
+    .then((product) => {
+        product.title = updatedTitle;
+        product.price = updatedPrice;
+        product.imageURL = updatedImageURL;
+        product.discription = updatedDescription;
+        return product.save();
+    }).then((result) => {
         console.log('Product Updated');
         res.redirect('/admin/products');
     }).catch((err) => {
@@ -67,7 +73,8 @@ exports.postDeleteProduct = (req, res, next) => {
     // })
     // Same as
 
-    Product.deleteById(productId).then((result) => {
+    Product.deleteOne({_id: productId})
+    .then((result) => {
         console.log('PRODUCT DESTROYED');
         res.redirect('/admin/products');
     }).catch((err) => {
@@ -76,7 +83,7 @@ exports.postDeleteProduct = (req, res, next) => {
 }
 
 exports.getProducts = (req, res, next) => {
-    Product.fetchAll().then((products) => {
+    Product.find().then((products) => {
         res.render('admin/products', {prods: products, pageTitle: "ADMIN PRODUCTS", path: '/admin/products'});
     }).catch((error) => {
         console.log(error);
