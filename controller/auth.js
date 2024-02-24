@@ -1,14 +1,18 @@
 const User = require('../models/user');
 
 exports.getLogin = (req, res, next) => {
-    res.render('auth/login', {path: '/login', pageTitle: 'Login', isAuthenticated: false});
+    // const isLoggedIn = req.get('Cookie').trim().split('=')[1];
+    res.render('auth/login', {path: '/login', pageTitle: 'Login', isAuthenticated: req.isLoggedIn});
 }
 
 exports.postLogin = (req, res, next) => {
-    User.findById('65d4bd3004a20a1a8fdde541').then((user) => {
+    User.findById('65d73de733dc9757e57d000a').then((user) => {
         req.session.isLoggedIn = true;
         req.session.user = user;
-        res.redirect('/');
+        req.session.save(err => {
+            console.log(err);
+            res.redirect('/');
+        });
     }).catch((err) => {
         console.log(err);
     });

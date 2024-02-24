@@ -3,7 +3,7 @@ const Product = require('../models/product.js');
 exports.getAddProduct = (req, res, next) => {
     // res.send('<form action="/admin/add-product" method="POST"><input type="text" name="title"><button type="submit">Click to add</button></form>');
     // res.sendFile(path.join(rootDir, 'views', 'add-product.html')); --> Serving Html files
-    res.render('admin/edit-product', {pageTitle: "Add Product", path: '/admin/add-product', editing: false})
+    res.render('admin/edit-product', {pageTitle: "Add Product", path: '/admin/add-product', editing: false, isAuthenticated: req.session.isLoggedIn})
 }
 
 exports.postAddProduct = (req, res, next) => {
@@ -35,7 +35,8 @@ exports.getEditProduct = (req, res, next) => {
             pageTitle: 'Edit Product',
             path: '/admin/edit-product',
             editing: editMode,
-            product: product
+            product: product, 
+            isAuthenticated: req.session.isLoggedIn
         });
     }).catch((err) => {
         console.log(err);
@@ -84,7 +85,7 @@ exports.postDeleteProduct = (req, res, next) => {
 
 exports.getProducts = (req, res, next) => {
     Product.find().then((products) => {
-        res.render('admin/products', {prods: products, pageTitle: "ADMIN PRODUCTS", path: '/admin/products'});
+        res.render('admin/products', {prods: products, pageTitle: "ADMIN PRODUCTS", path: '/admin/products', isAuthenticated: req.session.isLoggedIn});
     }).catch((error) => {
         console.log(error);
         res.status(500).json({message: error});
