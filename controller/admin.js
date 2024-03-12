@@ -1,4 +1,4 @@
-const Product = require('../models/product.js');
+const Product = require('../models/product');
 
 exports.getAddProduct = (req, res, next) => {
     // res.send('<form action="/admin/add-product" method="POST"><input type="text" name="title"><button type="submit">Click to add</button></form>');
@@ -52,14 +52,17 @@ exports.postEditProduct = (req, res, next) => {
     
     Product.findById(productId)
     .then((product) => {
+        if(product.userId.toString() !== req.user._id.toString()) {
+            return res.redirect('/');
+        }
         product.title = updatedTitle;
         product.price = updatedPrice;
         product.imageURL = updatedImageURL;
         product.discription = updatedDescription;
-        return product.save();
-    }).then((result) => {
-        console.log('Product Updated');
-        res.redirect('/admin/products');
+        return product.save().then((result) => {
+            console.log('Product Updated');
+            res.redirect('/admin/products');
+        });
     }).catch((err) => {
         console.log(err)
     });
@@ -74,7 +77,7 @@ exports.postDeleteProduct = (req, res, next) => {
     // })
     // Same as
 
-    Product.deleteOne({_id: productId})
+    Product.deleteOne({_id: productId, userId: req.user._id})
     .then((result) => {
         console.log('PRODUCT DESTROYED');
         res.redirect('/admin/products');
@@ -84,7 +87,7 @@ exports.postDeleteProduct = (req, res, next) => {
 }
 
 exports.getProducts = (req, res, next) => {
-    Product.find().then((products) => {
+    Product.find({userId: req.user._id}).then((products) => {
         res.render('admin/products', {prods: products, pageTitle: "ADMIN PRODUCTS", path: '/admin/products', isAuthenticated: req.session.isLoggedIn});
     }).catch((error) => {
         console.log(error);
