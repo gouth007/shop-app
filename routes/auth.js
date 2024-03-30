@@ -7,12 +7,16 @@ const User = require('../models/user');
 const router = express.Router();
 
 router.get('/login', authController.getLogin);
-router.post('/login', authController.postLogin);
+router.post('/login', 
+[
+    check('email').isEmail().withMessage('Enter valid email').normalizeEmail(),
+    body('password', 'Please enter password with characters or numbers and atleast 6 in length').isLength({min: 6}).isAlphanumeric().trim()
+], authController.postLogin);
 router.post('/logout', authController.postLogout);
 router.get('/signup', authController.getSignup);
 router.post('/signup',
 [
-    check('email').isEmail().withMessage('Enter a valid Email').custom((value, {req}) => {
+    check('email').isEmail().withMessage('Enter a valid Email').normalizeEmail().custom((value, {req}) => {
         // if(value.endsWith('yopmail.com')) {
         //     throw new Error('Mail with this domain is forbidden');
         // }
@@ -25,8 +29,11 @@ router.post('/signup',
     }),
     body('password', 'Please enter password with characters or numbers and atleast 6 in length')
     .isLength({min: 6})
-    .isAlphanumeric(),
-    body('confirmPassword').custom((value, { req }) => {
+    .isAlphanumeric()
+    .trim(),
+    body('confirmPassword')
+    .trim()
+    .custom((value, { req }) => {
         if(value !== req.body.password) {
             throw new Error('Passwords should match!');
         }

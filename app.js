@@ -6,12 +6,12 @@ const session = require('express-session');
 const MongoDbStore = require('connect-mongodb-session')(session);
 const csrf = require('csurf');
 const flash = require('connect-flash');
-//LSL7VDZAA7A4YWWZN83G7WHR
+const multer = require('multer');
 
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
 const authRoutes = require('./routes/auth');
-const error = require('./controller/error');
+const errorController = require('./controller/error');
 // const mongoConnect = require('./util/database').mongoConnect;
 const User = require('./models/user');
 
@@ -23,6 +23,21 @@ const store = new MongoDbStore({
     collection: 'sessions'
 })
 const csrfProtection = csrf();
+const fileStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'images');
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now()+'-'+file.originalname);
+    }
+});
+const fileFilter = (req, file, cb) =>{
+    if(file.mimetype === 'image/png' || file.mimetype === 'image/jpg' || file.mimetype === 'image/jpeg') {
+        cb(null, true);
+    }else {
+        cb(null, false);
+    }
+}
 
 app.set('view engine', 'ejs');
 app.set('views', 'views');
@@ -30,22 +45,12 @@ app.set('views', 'views');
 // app.set('views', 'views'); // Default is views
 
 app.use(bodyPraser.urlencoded({extended: true}));
+app.use(multer({ storage: fileStorage, fileFilter: fileFilter }).single('image'))
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use(session({secret: 'my secret', resave: false, saveUninitialized: false, store: store}));
 app.use(csrfProtection);
 app.use(flash());
-
-app.use((req, res, next) => {
-    if(!req.session.user) {
-        return next();
-    }
-    User.findById(req.session.user._id).then((user) => {
-        req.user = user;
-        next();
-    }).catch((err) => {
-        console.log(err);
-    });
-});
 
 app.use((req, res, next) => {
     res.locals.isAuthenticated = req.session.isLoggedIn;
@@ -53,11 +58,38 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use((req, res, next) => {
+    if(!req.session.user) {
+        return next();
+    }
+    User.findById(req.session.user._id).then((user) => {
+        if(!user) {
+            next();
+        }
+        req.user = user;
+        next();
+    }).catch((err) => {
+        // console.log(err);
+        next(new Error(err))
+    });
+});
+
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
+app.get('/500', errorController.get500)
 
-app.use(error.get404);
+app.use(errorController.get404);
+
+app.use((error, req, res, next) => {
+    // res.redirect('/500');
+    console.log(error);
+    res.status(500).render('500', {
+        pageTitle: 'Internal server error', 
+        path: '/500', 
+        isAuthenticated: req.session.isLoggedIn 
+    });
+})
 
 mongoose.connect(MONGODB_URI)       // mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
 .then(() => {

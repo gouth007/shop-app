@@ -7,22 +7,29 @@
     <%- include('../includes/navigation.ejs') %>
 
     <main>
-        <form class="product-form" action="/admin/<% if (editing) { %>edit-product<% } else { %>add-product<% } %>" method="POST">
+        <% if(errorMessage) { %>
+            <div class="user-message user-message--error"><%= errorMessage %></div>
+        <% } %>
+        <form class="product-form" action="/admin/<% if (editing) { %>edit-product<% } else { %>add-product<% } %>" method="POST" enctype="multipart/form-data">
             <div class="form-control">
                 <label for="title">Title</label>
-                <input type="text" name="title" id="title" value="<% if (editing) { %><%=product.title%><% } %>">
+                <input class="<%= validationErrors.find(i => i.path === 'title') ? 'invalid' : '' %>" name="title" id="title" value="<% if (editing || hasError) { %><%=product.title%><% } %>">
             </div>
             <div class="form-control">
                 <label for="price">Price</label>
-                <input type="number" name="price" id="price" step="0.01" value="<% if (editing) { %><%=product.price%><% } %>">
+                <input class="<%= validationErrors.find(i => i.path === 'price') ? 'invalid' : '' %>" type="number" name="price" id="price" step="0.01" value="<% if (editing || hasError) { %><%=product.price%><% } %>">
             </div>
-            <div class="form-control">
+            <!-- <div class="form-control">
                 <label for="imageURL">Image URL</label>
-                <input type="text" name="imageURL" id="imageURL" value="<% if (editing) { %><%=product.imageURL%><% } %>">
+                <input class="<%= validationErrors.find(i => i.path === 'imageURL') ? 'invalid' : '' %>" type="text" name="imageURL" id="imageURL" value="<% if (editing || hasError) { %><%=product.imageURL%><% } %>">
+            </div> -->
+            <div class="form-control">
+                <label for="image">Image URL</label>
+                <input type="file" name="image" id="image">
             </div>
             <div class="form-control">
                 <label for="discription">Discription</label>
-                <textarea name="discription" id="discription" rows="5" ><% if (editing) { %><%=product.discription%><% } %></textarea>
+                <textarea class="<%= validationErrors.find(i => i.path === 'discription') ? 'invalid' : '' %>" name="discription" id="discription" rows="5" ><% if (editing || hasError) { %><%= product.discription %><% } %></textarea>
             </div>
             <% if(editing) { %>
                 <input type="hidden" name="productId" value="<%= product._id %>">

@@ -21,17 +21,21 @@ exports.getLogin = (req, res, next) => {
     } else {
         message = null;
     }
-    res.render('auth/login', {path: '/login', pageTitle: 'Login', isAuthenticated: req.isLoggedIn, errorMessage: message});
+    res.render('auth/login', {path: '/login', pageTitle: 'Login', isAuthenticated: req.isLoggedIn, errorMessage: message, oldInput: { email: '', password: ''}, validationErrors: []});
 }
 
 exports.postLogin = (req, res, next) => {
     const email = req.body.email;
     const password = req.body.password;
+    const errors = validationResult(req);
+    if(!errors.isEmpty()) {
+    return res.status(422).render('auth/login', {path: '/login', pageTitle: 'Login', isAuthenticated: req.isLoggedIn, errorMessage: errors.array()[0].msg, oldInput: {email: email, password: password}, validationErrors: errors.array()});
+    }
     User.findOne({email: email})
     .then((user) => {
         if(!user) {
             req.flash('error', 'Invalid Email or Password.');
-            return res.redirect('/login');
+            return res.status(422).render('auth/login', {path: '/login', pageTitle: 'Login', isAuthenticated: req.isLoggedIn, errorMessage: 'User not found!!', oldInput: {email: email, password: password}, validationErrors: []});
         }
         bcrypt.compare(password, user.password).then((doMatch) => {
             if(doMatch) {
@@ -42,14 +46,16 @@ exports.postLogin = (req, res, next) => {
                     res.redirect('/');
                 });
             }
-            req.flash('error', 'Invalid Email or Password.');
-            res.redirect('/login');
+            return res.status(422).render('auth/login', {path: '/login', pageTitle: 'Login', isAuthenticated: req.isLoggedIn, errorMessage: 'Incorrect Password', oldInput: {email: email, password: password}, validationErrors: []});
         }).catch((err) => {
             console.log(err);
             res.redirect('/login');
         })
     }).catch((err) => {
-        console.log(err);
+        // console.log(err)
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
     });
 }
 
@@ -60,15 +66,23 @@ exports.getSignup = (req, res, next) => {
     } else {
         message = null;
     }
-    res.render('auth/signup', { path: '/signup', pageTitle: 'Signup', isAuthenticated: false, errorMessage: message});
+    res.render('auth/signup', { path: '/signup', pageTitle: 'Signup', isAuthenticated: false, errorMessage: message, oldInput: {email: '', password: '', confirmPassword: ''}, validationErrors: []});
 }
 
 exports.postSignup = (req, res, next) => {
     const email = req.body.email;
     const password = req.body.password;
     const errors = validationResult(req);
+    console.log(errors.array());
     if(!errors.isEmpty()) {
-        return res.status(422).render('auth/signup', { path: '/signup', pageTitle: 'Signup', isAuthenticated: false, errorMessage: errors.array()[0].msg});
+        return res.status(422).render('auth/signup', { 
+            path: '/signup',
+            pageTitle: 'Signup',
+            isAuthenticated: false,
+            errorMessage: errors.array()[0].msg,
+            oldInput: {email: email, password: password, confirmPassword: req.body.confirmPassword},
+            validationErrors: errors.array()
+        });
     }
     bcrypt.hash(password, 12)
         .then((hashedPassword) => {
@@ -88,7 +102,10 @@ exports.postSignup = (req, res, next) => {
                 text: 'Successfully signed up'
             })
         }).catch((err) => {
-            console.log(err);
+            // console.log(err)
+            const error = new Error(err);
+            error.httpStatusCode = 500;
+            return next(error);
         });
 }
 
@@ -138,8 +155,11 @@ exports.postReset = (req, res, next) =>{
                 console.log(err);
             })
         }).catch((err) => {
-            console.log(err);
-        })
+            // console.log(err)
+            const error = new Error(err);
+            error.httpStatusCode = 500;
+            return next(error);
+        });
     })
 }
 
@@ -179,6 +199,9 @@ exports.postNewPassword = (req, res, next) => {
     }).then((result) => {
         res.redirect('/login');
     }).catch((err) => {
-        console.log(err);
-    })
+        // console.log(err)
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+    });
 }
